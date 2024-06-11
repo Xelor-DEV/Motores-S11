@@ -15,6 +15,10 @@ public class GameManagerController : MonoBehaviour
             Instance = this;
         }
     }
+    private void Start()
+    {
+        Time.timeScale = 1;
+    }
     public void LoadScene(string scene)
     {
         // Este metodo se esta utilizando para evitar que salgan errores null reference por la destruccion de todos los objetos de la escena

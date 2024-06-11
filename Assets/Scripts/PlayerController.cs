@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int life;
     [SerializeField] private float speed;
     private Vector3 velocityBackup;
+    private float originalSpeed;
     private bool canMove = true;
     [SerializeField] private float brakeForce;
     [SerializeField] private int torchsActive;
@@ -116,11 +117,13 @@ public class PlayerController : MonoBehaviour
         canMove = false;
         velocityBackup = _compRigidbody.velocity;
         _compRigidbody.velocity = Vector3.zero;
-
+        originalSpeed = speed;
+        speed = 0;
     }
     public void ResumeMovement()
     {
         canMove = true;
         _compRigidbody.velocity = velocityBackup;
+        speed = originalSpeed;
     }
 }

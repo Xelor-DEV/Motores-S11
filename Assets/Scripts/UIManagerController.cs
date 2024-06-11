@@ -53,16 +53,25 @@ public class UIManagerController : MonoBehaviour
     }
     public void Win()
     {
-        Time.timeScale = 0f;
         pauseButton.interactable = false;
-        win.transform.DOMove(objective.position, duration).SetEase(animationType);
+        win.transform.DOMove(objective.position, duration).SetEase(animationType).OnComplete(() =>
+        {
+            Time.timeScale = 0;
+
+        });
+        PlayerController.Instance.StopMovement();
+
     }
 
     public void GameOver()
     {
-        Time.timeScale = 0f;
         pauseButton.interactable = false;
-        gameOver.transform.DOMove(objective.position, duration).SetEase(animationType);
+        gameOver.transform.DOMove(objective.position, duration).SetEase(animationType).OnComplete(() =>
+        {
+            Time.timeScale = 0;
+
+        });
+        PlayerController.Instance.StopMovement();
     }
 
     private void OnEnable()
