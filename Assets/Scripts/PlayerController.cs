@@ -1,9 +1,30 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System;
+using UnityEngine.Events;
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController Instance { get; private set; }
     [SerializeField] private int life;
+    [SerializeField] private float speed;
+    private Vector3 velocityBackup;
+    private bool canMove = true;
+    [SerializeField] private float brakeForce;
+    [SerializeField] private int torchsActive;
+    [SerializeField] private int maxTorchsActive;
+    private Vector2 movement = Vector2.zero;
+    private Rigidbody _compRigidbody;
+    public Action<int> OnLifeChanged;
+    public UnityEvent OnPlayerDeath;
+    public UnityEvent OnPlayerWin;
+    public Action<TorchController> OnPlayerActiveTorch;
+    public int TorchsActive
+    {
+        get
+        {
+            return torchsActive;
+        }
+    }
     public int Life
     {
         get
@@ -16,22 +37,10 @@ public class PlayerController : MonoBehaviour
             OnLifeChanged?.Invoke(life);
             if (life <= 0)
             {
-                GameManagerController.Instance.LoadScene("GameOver");
+                OnPlayerDeath?.Invoke();
             }
         }
     }
-    [SerializeField] private float speed;
-    [SerializeField] private float brakeForce;
-    [SerializeField] private int torchsActive;
-    public int TorchsActive
-    {
-        get
-        {
-            return torchsActive;
-        }
-    }
-
-    [SerializeField] private int maxTorchsActive;
     public int MaxTorchsActive
     {
         get
@@ -39,12 +48,16 @@ public class PlayerController : MonoBehaviour
             return maxTorchsActive;
         }
     }
-    private Vector2 movement = Vector2.zero;
-    private Rigidbody _compRigidbody;
-    public Action<int> OnLifeChanged;
-    public Action<TorchController> OnPlayerActiveTorch;
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this.gameObject);
+        }
+        else
+        {
+            Instance = this;
+        }
         _compRigidbody = GetComponent<Rigidbody>();
     }
     private void Start()
@@ -58,11 +71,14 @@ public class PlayerController : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        _compRigidbody.AddForce(new Vector3(movement.x * speed, 0 , movement.y * speed));
-        if (movement.magnitude < 0.2f)
+        if(canMove == true)
         {
-            Vector3 brakeForce = -_compRigidbody.velocity.normalized * _compRigidbody.velocity.magnitude * this.brakeForce;
-            _compRigidbody.AddForce(brakeForce, ForceMode.Force);
+            _compRigidbody.AddForce(new Vector3(movement.x * speed, 0, movement.y * speed));
+            if (movement.magnitude < 0.2f)
+            {
+                Vector3 brakeForce = -_compRigidbody.velocity.normalized * _compRigidbody.velocity.magnitude * this.brakeForce;
+                _compRigidbody.AddForce(brakeForce, ForceMode.Force);
+            }
         }
     }
     private void OnCollisionEnter(Collision collision)
@@ -82,12 +98,29 @@ public class PlayerController : MonoBehaviour
             WallController wall = collision.gameObject.GetComponent<WallController>();
             Life = Life - wall.Damage;
         }
+        else if (collision.gameObject.tag == "Enemy")
+        {
+            EnemyController enemy = collision.gameObject.GetComponent<EnemyController>();
+            Life = Life - enemy.Damage;
+        }
         else if (collision.gameObject.tag == "Portal")
         {
             if (torchsActive >= maxTorchsActive)
             {
-                GameManagerController.Instance.LoadScene("Win");
+                OnPlayerWin?.Invoke();
             }
         }
+    }
+    public void StopMovement()
+    {
+        canMove = false;
+        velocityBackup = _compRigidbody.velocity;
+        _compRigidbody.velocity = Vector3.zero;
+
+    }
+    public void ResumeMovement()
+    {
+        canMove = true;
+        _compRigidbody.velocity = velocityBackup;
     }
 }
